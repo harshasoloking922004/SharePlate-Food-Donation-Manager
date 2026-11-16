@@ -1,0 +1,1108 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SharePlate | Live Tracking</title>
+
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <style>
+        :root {
+            --forest: #174c32;
+            --forest-dark: #103923;
+            --green: #28734c;
+            --sage: #dce9dc;
+            --cream: #f5f5ed;
+            --white: #ffffff;
+            --text: #20382b;
+            --muted: #829087;
+            --border: #e7ece5;
+            --red: #c84d45;
+            --shadow: 0 12px 35px rgba(27, 62, 42, 0.07);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            color: var(--text);
+        }
+
+        button, input, select { font: inherit; }
+
+        .app {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* SIDEBAR */
+
+        .sidebar {
+            width: 250px;
+            background: var(--forest-dark);
+            color: white;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 48px;
+        }
+
+        .brand-icon {
+            width: 43px;
+            height: 43px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: #d9ead7;
+            color: var(--forest);
+            font-size: 24px;
+        }
+
+        .brand h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 23px;
+            margin: 0;
+            letter-spacing: -0.7px;
+        }
+
+        .brand small {
+            display: block;
+            color: #b5cbbb;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .side-label {
+            color: #91aa99;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.8px;
+            margin: 0 0 15px 10px;
+        }
+
+        .nav-item {
+            padding: 14px;
+            border-radius: 12px;
+            display: flex;
+            gap: 13px;
+            align-items: center;
+            color: #d2e0d5;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .nav-item.active {
+            background: #286344;
+            color: white;
+            font-weight: 700;
+        }
+
+        .nav-icon { font-size: 19px; }
+
+        .sidebar-bottom {
+            margin-top: auto;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 15px;
+            padding: 17px;
+        }
+
+        .sidebar-bottom strong {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 7px;
+        }
+
+        .sidebar-bottom p {
+            color: #c1d1c4;
+            font-size: 11px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* MAIN AREA */
+
+        .main {
+            flex: 1;
+            min-width: 0;
+            padding: 30px 36px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .welcome h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 27px;
+            margin: 0;
+            letter-spacing: -0.7px;
+        }
+
+        .welcome p {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .secure-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            padding: 10px 15px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--green);
+        }
+
+        .secure-dot, .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #36a66b;
+            border-radius: 50%;
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(54,166,107,.5); }
+            70% { box-shadow: 0 0 0 8px rgba(54,166,107,0); }
+            100% { box-shadow: 0 0 0 0 rgba(54,166,107,0); }
+        }
+
+        /* STAT CARDS */
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 17px;
+            margin-bottom: 22px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 17px;
+            padding: 19px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stat-icon {
+            width: 47px;
+            height: 47px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            font-size: 22px;
+            background: #e8f1e6;
+        }
+
+        .stat-card:nth-child(2) .stat-icon {
+            background: #e8eff5;
+        }
+
+        .stat-card:nth-child(3) .stat-icon {
+            background: #f7eee0;
+        }
+
+        .stat-info span {
+            display: block;
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 5px;
+        }
+
+        .stat-info strong {
+            font-family: 'Outfit', sans-serif;
+            font-size: 17px;
+        }
+
+        /* CONTENT GRID */
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 310px;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .card-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 20px 22px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-heading h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 17px;
+            margin: 0;
+        }
+
+        .map-tag {
+            background: #e9f3e9;
+            color: var(--green);
+            border-radius: 30px;
+            padding: 7px 11px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .5px;
+        }
+
+        #map {
+            width: 100%;
+            height: 510px;
+            z-index: 1;
+            background: #e8eee5;
+        }
+
+        .map-footer {
+            padding: 14px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            border-top: 1px solid var(--border);
+        }
+
+        .legend {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 11px;
+            color: #69776d;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .donor-dot { background: #2879d0; }
+        .ngo-dot { background: #dc8b32; }
+
+        /* RIGHT PANEL */
+
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .access-card { padding: 21px; }
+
+        .section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 17px;
+            margin: 0 0 6px;
+        }
+
+        .section-subtitle {
+            font-size: 11px;
+            color: var(--muted);
+            margin: 0 0 20px;
+            line-height: 1.5;
+        }
+
+        .field { margin-bottom: 15px; }
+
+        label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 7px;
+            color: #526459;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 13px;
+            border: 1px solid #e0e7df;
+            background: #fbfcf9;
+            border-radius: 10px;
+            outline: none;
+            color: var(--text);
+            font-size: 12px;
+            transition: .2s;
+        }
+
+        input:focus, select:focus {
+            border-color: #6a9c78;
+            box-shadow: 0 0 0 3px rgba(70,130,85,.10);
+        }
+
+        .button {
+            width: 100%;
+            border: 0;
+            border-radius: 10px;
+            padding: 13px;
+            margin-top: 9px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 800;
+            transition: transform .2s, opacity .2s;
+        }
+
+        .button:hover { transform: translateY(-2px); }
+        .button:active { transform: scale(.98); }
+
+        .start-button {
+            background: var(--forest);
+            color: white;
+        }
+
+        .stop-button {
+            background: #fff0ed;
+            color: var(--red);
+        }
+
+        .refresh-button {
+            background: #edf3eb;
+            color: var(--forest);
+        }
+
+        .button:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* STATUS */
+
+        .status-card { padding: 20px; }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 17px;
+        }
+
+        .status-header h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .status-badge {
+            background: #f1f3ef;
+            color: #788379;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .status-badge.active {
+            color: #26784a;
+            background: #e7f4e9;
+        }
+
+        .status-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .status-symbol {
+            width: 34px;
+            height: 34px;
+            border-radius: 11px;
+            display: grid;
+            place-items: center;
+            background: #edf4eb;
+            flex-shrink: 0;
+        }
+
+        .status-copy strong {
+            font-size: 12px;
+            display: block;
+            margin: 2px 0 4px;
+        }
+
+        .status-copy span {
+            font-size: 10px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        #message {
+            font-size: 11px;
+            color: #64756a;
+            line-height: 1.6;
+            margin: 15px 0 0;
+            padding: 12px;
+            background: #f6f8f4;
+            border-radius: 10px;
+            overflow-wrap: anywhere;
+        }
+
+        .privacy-note {
+            font-size: 10px;
+            line-height: 1.6;
+            color: #859187;
+            margin: 12px 0 0;
+        }
+
+        .hidden { display: none !important; }
+
+        /* CUSTOM MAP MARKERS */
+
+        .custom-marker {
+            width: 38px;
+            height: 38px;
+            border: 3px solid white;
+            border-radius: 50% 50% 50% 5px;
+            transform: rotate(-45deg);
+            display: grid;
+            place-items: center;
+            box-shadow: 0 4px 12px #0003;
+        }
+
+        .custom-marker span {
+            transform: rotate(45deg);
+            font-size: 16px;
+        }
+
+        .donor-marker { background: #2879d0; }
+        .ngo-marker { background: #dc8b32; }
+        .user-marker { background: var(--green); }
+
+        /* RESPONSIVE */
+
+        @media (max-width: 1050px) {
+            .content-grid { grid-template-columns: 1fr; }
+            .right-column {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 720px) {
+            .app { display: block; }
+
+            .sidebar {
+                width: 100%;
+                padding: 17px 20px;
+            }
+
+            .brand { margin-bottom: 18px; }
+            .side-label, .nav-item, .sidebar-bottom { display: none; }
+
+            .main { padding: 23px 15px; }
+
+            .topbar { align-items: flex-start; }
+            .welcome h2 { font-size: 22px; }
+
+            .secure-pill {
+                font-size: 0;
+                padding: 11px;
+            }
+
+            .stats { grid-template-columns: 1fr; gap: 10px; }
+            .stat-card { padding: 14px; }
+
+            .right-column { display: flex; }
+
+            #map { height: 390px; }
+        }
+
+        @media (max-width: 390px) {
+            .card-heading { padding: 15px; }
+            .access-card, .status-card { padding: 16px; }
+            #map { height: 330px; }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="app">
+
+<aside class="sidebar">
+    <div class="brand">
+        <div class="brand-icon">🌿</div>
+        <div>
+            <h1>SharePlate</h1>
+            <small>Food Rescue Network</small>
+        </div>
+    </div>
+
+    <p class="side-label">WORKSPACE</p>
+
+    <div class="nav-item active">
+        <span class="nav-icon">⌖</span>
+        Live Tracking
+    </div>
+
+    <div class="sidebar-bottom">
+        <strong>🌱 Together we reduce waste</strong>
+        <p>Every successful pickup helps turn surplus food into a meaningful meal.</p>
+    </div>
+</aside>    
+
+    <main class="main">
+
+        <div class="topbar">
+            <div class="welcome">
+                <h2>Live Tracking Dashboard</h2>
+                <p>Monitor your food rescue journey in real time.</p>
+            </div>
+
+            <div class="secure-pill">
+                <span class="secure-dot"></span>
+                Secure connection
+            </div>
+        </div>
+
+        <section class="stats">
+            <div class="stat-card">
+                <div class="stat-icon">📍</div>
+                <div class="stat-info">
+                    <span>Tracking ID</span>
+                    <strong id="statTrackingId">Not connected</strong>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">👤</div>
+                <div class="stat-info">
+                    <span>Your role</span>
+                    <strong id="statRole">Not selected</strong>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">🛰️</div>
+                <div class="stat-info">
+                    <span>GPS status</span>
+                    <strong id="statGps">Waiting</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="content-grid">
+
+            <div class="card">
+                <div class="card-heading">
+                    <h3>📍 Journey Map</h3>
+                    <span class="map-tag">LIVE MAP</span>
+                </div>
+
+                <div id="map"></div>
+
+                <div class="map-footer">
+                    <div class="legend">
+                        <span class="legend-dot donor-dot"></span>
+                        Donor location
+                    </div>
+
+                    <div class="legend">
+                        <span class="legend-dot ngo-dot"></span>
+                        NGO location
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-column">
+
+                <div class="card access-card">
+                    <h3 class="section-title">Tracking Controls</h3>
+                    <p class="section-subtitle">
+                        Connect securely to your food donation journey.
+                    </p>
+
+                    <div id="manualAccess">
+                        <div class="field">
+                            <label for="trackingId">TRACKING ID</label>
+                            <input type="number" id="trackingId"
+                                   placeholder="Enter tracking ID">
+                        </div>
+
+                        <div class="field">
+                            <label for="role">YOUR ROLE</label>
+                            <select id="role">
+                                <option value="NGO">NGO / Volunteer</option>
+                                <option value="DONOR">Donor</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="token">ACCESS TOKEN</label>
+                            <input type="password" id="token"
+                                   placeholder="Enter your access token">
+                        </div>
+                    </div>
+
+                    <button class="button start-button"
+                            id="startButton"
+                            onclick="startSharing()">
+                        ▶ &nbsp; Start Location Sharing
+                    </button>
+
+                    <button class="button stop-button"
+                            onclick="stopSharing()">
+                        ■ &nbsp; Stop Sharing
+                    </button>
+
+                    <button class="button refresh-button"
+                            onclick="loadLocations()">
+                        ↻ &nbsp; Refresh Map
+                    </button>
+
+                    <p class="privacy-note">
+                        🔒 Your location is shared only after you grant browser GPS permission.
+                    </p>
+                </div>
+
+                <div class="card status-card">
+                    <div class="status-header">
+                        <h3>Journey Status</h3>
+                        <span class="status-badge" id="statusBadge">OFFLINE</span>
+                    </div>
+
+                    <div class="status-row">
+                        <div class="status-symbol">🛰️</div>
+                        <div class="status-copy">
+                            <strong id="statusTitle">Waiting for connection</strong>
+                            <span id="statusDescription">
+                                Start sharing to send your live GPS location.
+                            </span>
+                        </div>
+                    </div>
+
+                    <p id="message">
+                        Enter your tracking details to begin.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    const map = L.map('map').setView([20.5937, 78.9629], 5);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const markers = {};
+
+    let watchId = null;
+    let pollingId = null;
+    let launchMode = false;
+
+    function details() {
+        return {
+            id: document.getElementById('trackingId').value,
+            role: document.getElementById('role').value,
+            token: document.getElementById('token').value
+        };
+    }
+
+    function message(text) {
+        document.getElementById('message').textContent = text;
+    }
+
+    function setStatus(active, title, description) {
+        const badge = document.getElementById('statusBadge');
+
+        badge.textContent = active ? 'LIVE' : 'OFFLINE';
+        badge.classList.toggle('active', active);
+
+        document.getElementById('statusTitle').textContent = title;
+        document.getElementById('statusDescription').textContent = description;
+        document.getElementById('statGps').textContent =
+            active ? 'Active' : 'Waiting';
+    }
+
+    function updateDashboard() {
+        const d = details();
+
+        document.getElementById('statTrackingId').textContent =
+            d.id || 'Not connected';
+
+        document.getElementById('statRole').textContent =
+            d.id ? (d.role === 'NGO' ? 'NGO / Volunteer' : 'Donor') : 'Not selected';
+    }
+
+    function apiUrl(path) {
+        const d = details();
+
+        return `/api/tracking/${encodeURIComponent(d.id)}/${path}` +
+            `?role=${encodeURIComponent(d.role)}`;
+    }
+
+    function authHeaders(json = false) {
+        const d = details();
+
+        const headers = {
+            'Authorization': 'Bearer ' + d.token
+        };
+
+        if (json) {
+            headers['Content-Type'] = 'application/json';
+        }
+
+        return headers;
+    }
+
+    // Create attractive map markers.
+    function createMarker(role) {
+        let markerClass = 'user-marker';
+        let emoji = '📍';
+
+        if (role === 'DONOR') {
+            markerClass = 'donor-marker';
+            emoji = '🍱';
+        } else if (role === 'NGO') {
+            markerClass = 'ngo-marker';
+            emoji = '🤝';
+        }
+
+        return L.divIcon({
+            className: '',
+            html: `<div class="custom-marker ${markerClass}">
+                       <span>${emoji}</span>
+                   </div>`,
+            iconSize: [38, 38],
+            iconAnchor: [19, 38],
+            popupAnchor: [0, -36]
+        });
+    }
+
+    // Secure launch-code verification.
+    async function processLaunchCode() {
+        const fragment = new URLSearchParams(
+            window.location.hash.substring(1)
+        );
+
+        const launchCode = fragment.get('launch');
+        const trackingId = fragment.get('trackingId');
+        const role = fragment.get('role');
+
+        if (!launchCode || !trackingId || !role) {
+            updateDashboard();
+            return;
+        }
+
+        history.replaceState(
+            null,
+            document.title,
+            window.location.pathname + window.location.search
+        );
+
+        launchMode = true;
+
+        document.getElementById('trackingId').value = trackingId;
+        document.getElementById('role').value = role;
+        document.getElementById('token').value = launchCode;
+
+        document.getElementById('manualAccess').classList.add('hidden');
+
+        updateDashboard();
+        message('Verifying secure tracking access...');
+
+        try {
+            const response = await fetch('/api/tracking/launch/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    trackingId: Number(trackingId),
+                    role: role,
+                    launchCode: launchCode
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                document.getElementById('token').value = '';
+                message(result.error || 'Launch code is invalid or expired.');
+                setStatus(false, 'Access verification failed',
+                    'Please reopen tracking from the SharePlate application.');
+                return;
+            }
+
+            message('Secure access verified. You can now start GPS sharing.');
+            setStatus(false, 'Ready to start tracking',
+                'Your tracking access has been verified.');
+
+        } catch (error) {
+            message('Could not verify tracking access: ' + error.message);
+            setStatus(false, 'Connection error',
+                'Unable to verify your tracking access.');
+        }
+    }
+
+    async function startSharing() {
+        const d = details();
+
+        if (!d.id || !d.token) {
+            message('Please enter Tracking ID and Access Token.');
+            return;
+        }
+
+        if (!navigator.geolocation) {
+            message('GPS is not supported by this browser.');
+            return;
+        }
+
+        const startButton = document.getElementById('startButton');
+        startButton.disabled = true;
+
+        try {
+            message('Checking tracking access...');
+
+            const response = await fetch(
+                apiUrl('sharing') + '&enabled=true',
+                {
+                    method: 'POST',
+                    headers: authHeaders()
+                }
+            );
+
+            const responseText = await response.text();
+
+            console.log('Sharing API status:', response.status);
+            console.log('Sharing API response:', responseText);
+
+            if (!response.ok) {
+                message('Access error (' + response.status + '): ' + responseText);
+                setStatus(false, 'Access denied',
+                    'Please check your tracking credentials.');
+                return;
+            }
+
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+
+            if (pollingId !== null) {
+                clearInterval(pollingId);
+            }
+
+            setStatus(true, 'Connecting to GPS',
+                'Waiting for your device location...');
+
+            watchId = navigator.geolocation.watchPosition(
+                sendLocation,
+                error => {
+                    message('GPS error: ' + error.message);
+                    setStatus(false, 'GPS unavailable',
+                        'Check your browser location permission.');
+                },
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 5000,
+                    timeout: 15000
+                }
+            );
+
+            pollingId = setInterval(loadLocations, 5000);
+
+            message('Location sharing started. Waiting for GPS...');
+            loadLocations();
+
+        } catch (error) {
+            message('Connection error: ' + error.message);
+            setStatus(false, 'Connection failed',
+                'Could not connect to the tracking server.');
+        } finally {
+            startButton.disabled = false;
+        }
+    }
+
+    async function sendLocation(position) {
+        const body = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy
+        };
+
+        try {
+            const response = await fetch(apiUrl('location'), {
+                method: 'POST',
+                headers: authHeaders(true),
+                body: JSON.stringify(body)
+            });
+
+            const responseText = await response.text();
+
+            console.log('Location API status:', response.status);
+            console.log('Location API response:', responseText);
+
+            if (response.ok) {
+                message('Your location is being shared securely.');
+                setStatus(true, 'Location sharing active',
+                    'Your latest GPS location has been sent.');
+                loadLocations();
+            } else {
+                message('Location error (' + response.status + '): ' + responseText);
+            }
+
+        } catch (error) {
+            message('Could not send location: ' + error.message);
+        }
+    }
+
+    async function loadLocations() {
+        const d = details();
+
+        if (!d.id || !d.token) return;
+
+        try {
+            const response = await fetch(apiUrl('locations'), {
+                headers: authHeaders()
+            });
+
+            if (!response.ok) {
+                message('Unable to load locations. Check your access token.');
+                return;
+            }
+
+            const locations = await response.json();
+
+            locations.forEach(item => {
+                const lat = Number(item.latitude);
+                const lng = Number(item.longitude);
+                const role = item.sharedBy || item.shared_by || 'USER';
+
+                if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                    return;
+                }
+
+                const point = [lat, lng];
+
+                if (markers[role]) {
+                    markers[role].setLatLng(point);
+                } else {
+                    markers[role] = L.marker(point, {
+                        icon: createMarker(role)
+                    })
+                    .addTo(map)
+                    .bindPopup('<strong>' + role + '</strong><br>Latest shared location');
+                }
+            });
+
+            if (locations.length > 0) {
+                const points = Object.values(markers)
+                    .map(marker => marker.getLatLng());
+
+                if (points.length) {
+                    map.fitBounds(
+                        L.latLngBounds(points),
+                        { padding: [40, 40], maxZoom: 15 }
+                    );
+                }
+            }
+
+        } catch (error) {
+            message('Map update error: ' + error.message);
+        }
+    }
+
+    async function stopSharing() {
+        const d = details();
+
+        if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+
+        if (pollingId !== null) {
+            clearInterval(pollingId);
+            pollingId = null;
+        }
+
+        if (d.id && d.token) {
+            try {
+                const response = await fetch(
+                    apiUrl('sharing') + '&enabled=false',
+                    {
+                        method: 'POST',
+                        headers: authHeaders()
+                    }
+                );
+
+                if (!response.ok) {
+                    message('Stopped local GPS, but server update failed.');
+                    setStatus(false, 'Local GPS stopped',
+                        'The server could not be updated.');
+                    return;
+                }
+
+            } catch (error) {
+                message('Stopped local GPS, but server update failed.');
+                setStatus(false, 'Local GPS stopped',
+                    'The server could not be updated.');
+                return;
+            }
+        }
+
+        message('Location sharing stopped on this device.');
+        setStatus(false, 'Sharing stopped',
+            'Your device has stopped sending GPS updates.');
+    }
+
+    document.getElementById('trackingId').addEventListener('input', updateDashboard);
+    document.getElementById('role').addEventListener('change', updateDashboard);
+
+    window.addEventListener('beforeunload', () => {
+        if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+        }
+
+        if (pollingId !== null) {
+            clearInterval(pollingId);
+        }
+    });
+
+    processLaunchCode();
+</script>
+
+</body>
+</html>
